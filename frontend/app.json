@@ -9,7 +9,17 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#ffffff",
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Permitir que la app acceda a la cámara",
+          "microphonePermission": "Permitir que la app acceda al micrófono",
+          "recordAudioAndroid": false
+        }
+      ]
+    ]
     },
     "ios": {
       "supportsTablet": true
