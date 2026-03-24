@@ -62,6 +62,7 @@ export const commonStyles = StyleSheet.create({
     backgroundColor: '#e5e7eb',
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 16,
   },
 
   image: {

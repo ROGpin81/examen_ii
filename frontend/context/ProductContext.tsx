@@ -18,9 +18,12 @@ interface CrearProductoInput {
 interface ProductContextProps {
   productos: Producto[];
   cargando: boolean;
+  fotoTemporalUri: string | null;
   cargarProductos: () => Promise<void>;
   agregarProducto: (producto: CrearProductoInput) => Promise<void>;
   borrarProducto: (id: number) => Promise<void>;
+  setFotoTemporalUri: (uri: string | null) => void;
+  limpiarFotoTemporal: () => void;
 }
 
 const ProductContext = createContext<ProductContextProps | undefined>(undefined);
@@ -28,6 +31,7 @@ const ProductContext = createContext<ProductContextProps | undefined>(undefined)
 export function ProductProvider({ children }: { children: ReactNode }) {
   const [productos, setProductos] = useState<Producto[]>([]);
   const [cargando, setCargando] = useState(false);
+  const [fotoTemporalUri, setFotoTemporalUri] = useState<string | null>(null);
 
   const cargarProductos = async () => {
     try {
@@ -46,6 +50,7 @@ export function ProductProvider({ children }: { children: ReactNode }) {
     try {
       await crearProductoApi(producto);
       await cargarProductos();
+      limpiarFotoTemporal();
     } catch (error) {
       console.error('Error al agregar producto:', error);
       throw error;
@@ -62,14 +67,21 @@ export function ProductProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const limpiarFotoTemporal = () => {
+    setFotoTemporalUri(null);
+  };
+
   return (
     <ProductContext.Provider
       value={{
         productos,
         cargando,
+        fotoTemporalUri,
         cargarProductos,
         agregarProducto,
         borrarProducto,
+        setFotoTemporalUri,
+        limpiarFotoTemporal,
       }}
     >
       {children}

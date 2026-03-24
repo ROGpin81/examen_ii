@@ -1,19 +1,23 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Text,
-  TextInput,
-  StyleSheet,
   Alert,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import * as ImagePicker from 'expo-image-picker';
 import { useProducts } from '../context/ProductContext';
 import ScreenContainer from '../components/ScreenContainer';
 import PrimaryButton from '../components/PrimaryButton';
+import FormField from '../components/FormField';
+import ImagePickerSection from '../components/ImagePickerSection';
 import { commonStyles } from '../styles/commonStyles';
 
 export default function ProductFormScreen() {
-  const navigation = useNavigation();
-  const { agregarProducto } = useProducts();
+  const {
+    agregarProducto,
+    fotoTemporalUri,
+    setFotoTemporalUri,
+    limpiarFotoTemporal,
+  } = useProducts();
 
   const [nombre, setNombre] = useState('');
   const [descripcion, setDescripcion] = useState('');
@@ -22,9 +26,87 @@ export default function ProductFormScreen() {
   const [categoria, setCategoria] = useState('');
   const [urlFotografia, setUrlFotografia] = useState('');
 
+  useEffect(() => {
+    if (fotoTemporalUri) {
+      setUrlFotografia(fotoTemporalUri);
+    }
+  }, [fotoTemporalUri]);
+
+  const tomarFoto = async () => {
+    try {
+      const cameraPermission = await ImagePicker.requestCameraPermissionsAsync();
+
+      if (!cameraPermission.granted) {
+        Alert.alert('Permiso requerido', 'Debes conceder permiso para usar la cámara.');
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        quality: 0.7,
+      });
+
+      if (!result.canceled && result.assets.length > 0) {
+        const uri = result.assets[0].uri;
+        setFotoTemporalUri(uri);
+        setUrlFotografia(uri);
+      }
+    } catch (error) {
+      console.error(error);
+      Alert.alert('Error', 'No se pudo abrir la cámara.');
+    }
+  };
+
+  const seleccionarDesdeGaleria = async () => {
+    try {
+      const mediaPermission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (!mediaPermission.granted) {
+        Alert.alert('Permiso requerido', 'Debes conceder permiso para acceder a la galería.');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        quality: 0.7,
+      });
+
+      if (!result.canceled && result.assets.length > 0) {
+        const uri = result.assets[0].uri;
+        setFotoTemporalUri(uri);
+        setUrlFotografia(uri);
+      }
+    } catch (error) {
+      console.error(error);
+      Alert.alert('Error', 'No se pudo abrir la galería.');
+    }
+  };
+
+  const quitarFoto = () => {
+    setUrlFotografia('');
+    limpiarFotoTemporal();
+  };
+
+  const limpiarFormulario = () => {
+    setNombre('');
+    setDescripcion('');
+    setPrecio('');
+    setEstado('Disponible');
+    setCategoria('');
+    setUrlFotografia('');
+    limpiarFotoTemporal();
+  };
+
   const guardarProducto = async () => {
     if (!nombre || !descripcion || !precio || !estado || !categoria) {
       Alert.alert('Validación', 'Complete todos los campos obligatorios');
+      return;
+    }
+
+    if (Number.isNaN(Number(precio))) {
+      Alert.alert('Validación', 'El precio debe ser numérico');
       return;
     }
 
@@ -39,7 +121,7 @@ export default function ProductFormScreen() {
       });
 
       Alert.alert('Éxito', 'Producto creado correctamente');
-      navigation.goBack();
+      limpiarFormulario();
     } catch (error: any) {
       Alert.alert('Error', error.message || 'No se pudo crear el producto');
     }
@@ -49,59 +131,58 @@ export default function ProductFormScreen() {
     <ScreenContainer scrollable>
       <Text style={commonStyles.title}>Formulario de producto</Text>
 
-      <Text style={commonStyles.label}>Nombre</Text>
-      <TextInput
-        style={commonStyles.input}
+      <FormField
+        label="Nombre"
         value={nombre}
         onChangeText={setNombre}
         placeholder="Ingrese el nombre del producto"
       />
 
-      <Text style={commonStyles.label}>Descripción</Text>
-      <TextInput
-        style={[commonStyles.input, commonStyles.textArea]}
+      <FormField
+        label="Descripción"
         value={descripcion}
         onChangeText={setDescripcion}
         placeholder="Ingrese la descripción"
         multiline
       />
 
-      <Text style={commonStyles.label}>Precio</Text>
-      <TextInput
-        style={commonStyles.input}
+      <FormField
+        label="Precio"
         value={precio}
         onChangeText={setPrecio}
         placeholder="Ingrese el precio"
         keyboardType="numeric"
       />
 
-      <Text style={commonStyles.label}>Estado</Text>
-      <TextInput
-        style={commonStyles.input}
+      <FormField
+        label="Estado"
         value={estado}
         onChangeText={(text) => setEstado(text as 'Disponible' | 'No disponible')}
         placeholder="Disponible o No disponible"
       />
 
-      <Text style={commonStyles.label}>Categoría</Text>
-      <TextInput
-        style={commonStyles.input}
+      <FormField
+        label="Categoría"
         value={categoria}
         onChangeText={setCategoria}
         placeholder="Ingrese la categoría"
       />
 
-      <Text style={commonStyles.label}>URL fotografía</Text>
-      <TextInput
-        style={commonStyles.input}
+      <ImagePickerSection
+        imageUri={urlFotografia}
+        onTakePhoto={tomarFoto}
+        onPickFromGallery={seleccionarDesdeGaleria}
+        onRemovePhoto={quitarFoto}
+      />
+
+      <FormField
+        label="URI de la foto"
         value={urlFotografia}
         onChangeText={setUrlFotografia}
-        placeholder="Ingrese la URL o ruta de la foto"
+        placeholder="La URI se llenará automáticamente"
       />
 
       <PrimaryButton title="Guardar producto" onPress={guardarProducto} />
     </ScreenContainer>
   );
 }
-
-const styles = StyleSheet.create({});
